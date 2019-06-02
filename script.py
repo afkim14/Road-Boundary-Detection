@@ -1,3 +1,4 @@
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
 import open3d as o3d
@@ -17,27 +18,21 @@ def main():
     x,y,z=gps_to_ecef_pyproj(np.array(point_clouds['longitude']),np.array(point_clouds['latitude']),np.array(point_clouds['altitude']))
     point_clouds['x']=x;point_clouds['y']=y; point_clouds['z']=z #add xyz to original df
 
-    # TRANSFORM FROM POINT CLOUD (LAT LONG ALT) TO POINT CLOUD (X Y Z) using gps_to_ecef_pyproj
-
-    with open('./final_project_data/image/camera.config', 'r') as config_file:
-        config_file.readline()
-        config_params = config_file.readline()
-        config_params_split = config_params.split(',')
-        cam_lat = float(config_params_split[0])
-        cam_lon = float(config_params_split[1])
-        cam_alt = float(config_params_split[2])
-        cam_qs = float(config_params_split[3])
-        cam_qx = float(config_params_split[4])
-        cam_qy = float(config_params_split[5])
-        cam_qz = float(config_params_split[6])
+    maxIntensity = point_clouds['intensity'].max()
+    # point_clouds.drop(point_clouds[point_clouds['intensity']>50].index,inplace=True)
+    # point_clouds.drop(point_clouds[point_clouds['altitude']>227].index,inplace=True)
+    # point_clouds.drop(point_clouds[point_clouds['altitude']<224].index,inplace=True)
+    # q0 = point_clouds['altitude'].quantile([0.25])
+    # point_clouds.drop(point_clouds[point_clouds['altitude']>q0[.25]].index,inplace=True)
 
 
-    fig = plt.figure(figsize=(30, 30))
-    plt.plot(point_clouds['latitude'].tolist(), point_clouds['longitude'].tolist(), '.', color='k')
-    plt.axis('off')
-    fig.savefig("output/image.jpg", bbox_inches='tight')
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(point_clouds['x'], point_clouds['y'], point_clouds['altitude'], c=point_clouds['intensity'], vmin=0,vmax=maxIntensity)
+    plt.show()
+    # plt.savefig("output/image.jpg")
 
-    # export_csv = point_clouds.to_csv ('export_dataframe.csv', index=None, header=True)
+    export_csv = point_clouds.to_csv ('export_dataframe.csv', index=None, header=True)
 
 if __name__ == "__main__":
     main()
