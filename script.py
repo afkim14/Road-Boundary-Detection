@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 import pyproj
 
+from sklearn.cluster import DBSCAN
+from collections import Counter
+
 def get_camera_conifg():
    with open('./final_project_data/image/camera.config', 'r') as config_file:
        config_file.readline()
@@ -22,6 +25,21 @@ def filter_data(point_clouds_cp,cam_alt,delY, heightcar):
    point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['altitude']<cam_alt- delY/2-heightcar].index,inplace=True)
    point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['intensity']<50].index,inplace=True)
    return point_clouds_cp
+
+def DBSCAN_cluster(point_clouds_cp):
+    clusters = DBSCAN(eps=0.0000005).fit(point_clouds_cp)
+    df = pd.DataFrame([point_clouds_cp['longitude'], point_clouds_cp['latitude'], clusters.labels_]).T
+    df.columns = ['x', 'y','label'];
+    max_label = df.label.mode()[0];
+    max_cluster = df[df['label']==max_label];
+
+    np_chunk = np.array(max_cluster)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.grid(True,linestyle='-',color='0.75')
+    c = [1]*len(np_chunk[:,0])
+    ax.scatter(np_chunk[:,0], np_chunk[:,1], c=c, s=1, edgecolors='none')
+    plt.show()
 
 def main():
    # pull in data
@@ -46,7 +64,9 @@ def main():
    plt.colorbar()
    plt.savefig('./output/2dplot.png')
    print('Saving figure...')
+
    #do clustering
+   DBSCAN_cluster(point_clouds_cp)
 
 if __name__ == "__main__":
    main()
