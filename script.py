@@ -4,7 +4,7 @@ import open3d as o3d
 import matplotlib.pyplot as plt
 import pyproj
 
-def gps_to_ecef_pyproj(lat, lon, alt):
+def gps_to_ecef_pyproj(lon,lat, alt):
     ecef = pyproj.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
     lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
     x, y, z = pyproj.transform(lla, ecef, lon, lat, alt, radians=False)
@@ -14,6 +14,8 @@ def main():
     point_clouds = pd.read_csv("./final_project_data/final_project_point_cloud.fuse", sep=',', header=None, names=['combined'])
     point_clouds = point_clouds['combined'].str.split(' ', expand=True).astype(np.float64)
     point_clouds.columns = ['latitude', 'longitude', 'altitude', 'intensity']
+    x,y,z=gps_to_ecef_pyproj(np.array(point_clouds['longitude']),np.array(point_clouds['latitude']),np.array(point_clouds['altitude']))
+    point_clouds['x']=x;point_clouds['y']=y; point_clouds['z']=z #add xyz to original df
 
     # TRANSFORM FROM POINT CLOUD (LAT LONG ALT) TO POINT CLOUD (X Y Z) using gps_to_ecef_pyproj
 
