@@ -1,38 +1,52 @@
-from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import open3d as o3d
-import matplotlib.pyplot as plt
 import pyproj
 
-def gps_to_ecef_pyproj(lon,lat, alt):
-    ecef = pyproj.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
-    lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
-    x, y, z = pyproj.transform(lla, ecef, lon, lat, alt, radians=False)
-    return x, y, z
+def get_camera_conifg():
+   with open('./final_project_data/image/camera.config', 'r') as config_file:
+       config_file.readline()
+       config_params = config_file.readline()
+       config_params_split = config_params.split(',')
+       cam_lat = float(config_params_split[0])
+       cam_lon = float(config_params_split[1])
+       cam_alt = float(config_params_split[2])
+       cam_qs = float(config_params_split[3])
+       cam_qx = float(config_params_split[4])
+       cam_qy = float(config_params_split[5])
+       cam_qz = float(config_params_split[6])
+       return cam_lat, cam_lon, cam_alt, cam_qs, cam_qx, cam_qy, cam_qz
+
+def filter_data(point_clouds_cp,cam_alt,delY, heightcar):
+   point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['altitude']>cam_alt+ delY/2-heightcar].index,inplace=True)
+   point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['altitude']<cam_alt- delY/2-heightcar].index,inplace=True)
+   point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['intensity']<50].index,inplace=True)
+
 
 def main():
-    point_clouds = pd.read_csv("./final_project_data/final_project_point_cloud.fuse", sep=',', header=None, names=['combined'])
-    point_clouds = point_clouds['combined'].str.split(' ', expand=True).astype(np.float64)
-    point_clouds.columns = ['latitude', 'longitude', 'altitude', 'intensity']
-    x,y,z=gps_to_ecef_pyproj(np.array(point_clouds['longitude']),np.array(point_clouds['latitude']),np.array(point_clouds['altitude']))
-    point_clouds['x']=x;point_clouds['y']=y; point_clouds['z']=z #add xyz to original df
+   # pull in data
+   print('Starting..')
+   point_clouds = pd.read_csv("./final_project_data/final_project_point_cloud.fuse", sep=',', header=None, names=['combined'])
+   point_clouds = point_clouds['combined'].str.split(' ', expand=True).astype(np.float64)
+   point_clouds.columns = ['latitude', 'longitude', 'altitude', 'intensity']
 
-    maxIntensity = point_clouds['intensity'].max()
-    # point_clouds.drop(point_clouds[point_clouds['intensity']>50].index,inplace=True)
-    # point_clouds.drop(point_clouds[point_clouds['altitude']>227].index,inplace=True)
-    # point_clouds.drop(point_clouds[point_clouds['altitude']<224].index,inplace=True)
-    # q0 = point_clouds['altitude'].quantile([0.25])
-    # point_clouds.drop(point_clouds[point_clouds['altitude']>q0[.25]].index,inplace=True)
+   # get camera altitude, search for points nearest to camera altitude given an assumed delY height and car hegiht
+   delY=2; heightcar=3
+   cam_lat, cam_lon, cam_alt, cam_qs, cam_qx, cam_qy, cam_qz=get_camera_conifg()
+   point_clouds_cp=filter_data(point_clouds,cam_alt,delY, heightcar)
 
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(point_clouds['x'], point_clouds['y'], point_clouds['altitude'], c=point_clouds['intensity'], vmin=0,vmax=maxIntensity)
-    plt.show()
-    # plt.savefig("output/image.jpg")
-
-    export_csv = point_clouds.to_csv ('export_dataframe.csv', index=None, header=True)
+   #make 3d plot and 2d plot
+   from mpl_toolkits.mplot3d import Axes3D
+   fig = plt.figure()
+   ax = fig.add_subplot(111, projection='3d')
+   plt.scatter(x=point_clouds_cp['longitude'],y=point_clouds_cp['latitude'],zs=point_clouds_cp['altitude'],c=point_clouds_cp['intensity'],s=0.1,vmin=20,vmax=100)
+   plt.savefig('./3dplot.png')
+   fig = plt.figure()
+   plt.scatter(x=point_clouds_cp['longitude'],y=point_clouds_cp['latitude'],c=point_clouds_cp['altitude'],s=.1)
+   plt.colorbar()
+   plt.savefig('./2dplot.png')
+   print('Saving figure...')
+   #do clustering
 
 if __name__ == "__main__":
-    main()
+   main()
