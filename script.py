@@ -21,7 +21,7 @@ def filter_data(point_clouds_cp,cam_alt,delY, heightcar):
    point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['altitude']>cam_alt+ delY/2-heightcar].index,inplace=True)
    point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['altitude']<cam_alt- delY/2-heightcar].index,inplace=True)
    point_clouds_cp.drop(point_clouds_cp[point_clouds_cp['intensity']<50].index,inplace=True)
-
+   return point_clouds_cp
 
 def main():
    # pull in data
@@ -40,11 +40,11 @@ def main():
    fig = plt.figure()
    ax = fig.add_subplot(111, projection='3d')
    plt.scatter(x=point_clouds_cp['longitude'],y=point_clouds_cp['latitude'],zs=point_clouds_cp['altitude'],c=point_clouds_cp['intensity'],s=0.1,vmin=20,vmax=100)
-   plt.savefig('./3dplot.png')
+   plt.savefig('./output/3dplot.png')
    fig = plt.figure()
    plt.scatter(x=point_clouds_cp['longitude'],y=point_clouds_cp['latitude'],c=point_clouds_cp['altitude'],s=.1)
    plt.colorbar()
-   plt.savefig('./2dplot.png')
+   plt.savefig('./output/2dplot.png')
    print('Saving figure...')
    #do clustering
 
